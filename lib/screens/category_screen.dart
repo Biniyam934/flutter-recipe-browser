@@ -3,32 +3,33 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../models/meal_category.dart';
+import '../models/meal.dart';
 import '../services/api_exception.dart';
 import '../services/meal_api_handler.dart';
-import 'category_screen.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class CategoryScreen extends StatefulWidget {
+  final String category;
+
+  const CategoryScreen({super.key, required this.category});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<CategoryScreen> createState() => _CategoryScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _CategoryScreenState extends State<CategoryScreen> {
   final MealApiHandler _apiHandler = MealApiHandler();
-  late Future<List<MealCategory>> _categoriesFuture;
+  late Future<List<Meal>> _mealsFuture;
 
   @override
   void initState() {
     super.initState();
-    _categoriesFuture = _apiHandler.fetchCategories();
+    _mealsFuture = _apiHandler.fetchMealsByCategory(widget.category);
   }
 
   void _retry() {
     if (mounted) {
       setState(() {
-        _categoriesFuture = _apiHandler.fetchCategories();
+        _mealsFuture = _apiHandler.fetchMealsByCategory(widget.category);
       });
     }
   }
@@ -49,11 +50,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recipe Browser'),
+        title: Text(widget.category),
         centerTitle: true,
       ),
-      body: FutureBuilder<List<MealCategory>>(
-        future: _categoriesFuture,
+      body: FutureBuilder<List<Meal>>(
+        future: _mealsFuture,
         builder: (context, snapshot) {
           // State 1: Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -91,59 +92,57 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
               child: Text(
-                'No categories found',
+                'No meals found',
                 style: TextStyle(fontSize: 16),
               ),
             );
           }
 
           // State 4: Data loaded
-          final categories = snapshot.data!;
-          return ListView.builder(
-            itemCount: categories.length,
-            padding: const EdgeInsets.all(8.0),
+          final meals = snapshot.data!;
+          return GridView.builder(
+            padding: const EdgeInsets.all(12.0),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12.0,
+              mainAxisSpacing: 12.0,
+              childAspectRatio: 0.85,
+            ),
+            itemCount: meals.length,
             itemBuilder: (context, index) {
-              final category = categories[index];
+              final meal = meals[index];
               return Card(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 8.0,
-                  vertical: 4.0,
+                clipBehavior: Clip.antiAlias,
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
                 ),
-                child: ListTile(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryScreen(
-                          category: category.strCategory,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: Image.network(
+                        meal.strMealThumb,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(child: Icon(Icons.broken_image));
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        meal.strMeal,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
-                    );
-                  },
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8.0),
-                    child: Image.network(
-                      category.strCategoryThumb,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: Icon(Icons.broken_image),
-                        );
-                      },
                     ),
-                  ),
-                  title: Text(
-                    category.strCategory,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
+                  ],
                 ),
               );
             },
