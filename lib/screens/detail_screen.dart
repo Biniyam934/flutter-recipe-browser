@@ -58,16 +58,13 @@ class _DetailScreenState extends State<DetailScreen> {
 
   Future<void> _launchYoutube(String url) async {
     if (url.trim().isEmpty) {
-      debugPrint('YouTube URL is empty');
       return;
     }
 
     final normalizedUrl = _normalizeYoutubeUrl(url.trim());
-    debugPrint('Attempting to launch: $normalizedUrl');
 
     final uri = Uri.tryParse(normalizedUrl);
     if (uri == null) {
-      debugPrint('Invalid URL: $normalizedUrl');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid YouTube URL')),
@@ -82,7 +79,6 @@ class _DetailScreenState extends State<DetailScreen> {
         mode: LaunchMode.externalApplication,
       );
       if (!launched) {
-        debugPrint('launchUrl returned false for: $normalizedUrl');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Could not open YouTube')),
@@ -90,7 +86,6 @@ class _DetailScreenState extends State<DetailScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error launching URL: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not open YouTube')),
